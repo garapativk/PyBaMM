@@ -30,6 +30,8 @@ class BaseInterface(pybamm.BaseSubModel):
             self.reaction_name = ""
         elif reaction == "lead-acid main":
             self.reaction_name = ""  # empty reaction name for the main reaction
+        elif reaction == "sodium-ion main":
+            self.reaction_name = ""
         elif reaction == "lead-acid oxygen":
             self.reaction_name = "oxygen "
         elif reaction in ["SEI", "SEI on cracks", "lithium plating"]:
@@ -37,6 +39,7 @@ class BaseInterface(pybamm.BaseSubModel):
 
         if reaction in [
             "lithium-ion main",
+            "sodium-ion main"
             "lithium metal plating",
             "SEI",
             "SEI on cracks",
@@ -69,7 +72,7 @@ class BaseInterface(pybamm.BaseSubModel):
         c_e = variables[f"{Domain} electrolyte concentration [mol.m-3]"]
         T = variables[f"{Domain} electrode temperature [K]"]
 
-        if self.reaction == "lithium-ion main":
+        if self.reaction == "lithium-ion main" or self.reaction == "sodium-ion main":
             # For "particle-size distribution" submodels, take distribution version
             # of c_s_surf that depends on particle size.
             domain_options = getattr(self.options, domain)
@@ -158,6 +161,7 @@ class BaseInterface(pybamm.BaseSubModel):
         if self.reaction in [
             "lithium-ion main",
             "lithium metal plating",
+            "sodium-ion main"
         ]:
             return self.phase_param.ne
         elif self.reaction == "lead-acid main":

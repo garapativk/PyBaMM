@@ -21,7 +21,7 @@ class CurrentSigmoidOpenCircuitPotential(BaseOpenCircuitPotential):
 
         phase_name = self.phase_name
 
-        if self.reaction == "lithium-ion main":
+        if self.reaction == "lithium-ion main" or self.reaction == "sodium-ion main":
             T = variables[f"{Domain} electrode temperature [K]"]
             # For "particle-size distribution" models, take distribution version
             # of sto_surf that depends on particle size.

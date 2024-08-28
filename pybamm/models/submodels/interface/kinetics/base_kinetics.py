@@ -73,7 +73,13 @@ class BaseKinetics(BaseInterface):
         # broadcast to "particle size" domain
         domain_options = getattr(self.options, domain)
         if (
-            self.reaction == "lithium-ion main"
+            self.reaction == "lithium-ion main" 
+            and domain_options["particle size"] == "distribution"
+        ):
+            delta_phi = pybamm.PrimaryBroadcast(delta_phi, [f"{domain} particle size"])
+
+        if (
+            self.reaction == "sodium-ion main" 
             and domain_options["particle size"] == "distribution"
         ):
             delta_phi = pybamm.PrimaryBroadcast(delta_phi, [f"{domain} particle size"])
@@ -195,6 +201,21 @@ class BaseKinetics(BaseInterface):
                 j_j = self._get_kinetics_by_reaction(j0_j, ne, eta_r, T, u, i)
                 variables.update(self._get_standard_icd_by_reaction_variables(j_j, i))
                 j += j_j
+        elif domain_options["intercalation kinetics"] == "kinetic controlled Buter-Volmer":
+            # c_s = variables[f"{Domain} particle concentration [mol.m-3]"]
+            # c_s_surf = pybamm.surf(c_s)
+            c_s_surf = variables[f"{Domain} particle surface concentration [mol.m-3]"]
+            c_e = variables[f"{Domain} electrolyte concentration [mol.m-3]"]
+            # c_max = self.param.Domain.prim.c_max
+            c_max = pybamm.Parameter(f"Maximum concentration in {domain} electrode [mol.m-3]")
+            # c_avg = pybamm.x_average(c_s_surf)
+            c_avg = variables[f"X-averaged {domain} particle surface concentration [mol.m-3]"]
+            # c_e_avg = pybamm.x_average(c_e)
+            c_e_avg = variables[f"X-averaged {domain} electrolyte concentration [mol.m-3]"]
+            c_rt = c_s_surf/c_avg
+            c_diff_rt = (c_max - c_s_surf)/(c_max - c_avg)
+            c_rt_e = c_e/c_e_avg
+            j = self._get_kinetics(j0, ne, eta_r, T, u, c_rt, c_diff_rt, c_rt_e)
         else:
             j = self._get_kinetics(j0, ne, eta_r, T, u)
 
@@ -227,6 +248,7 @@ class BaseKinetics(BaseInterface):
             "lithium-ion main",
             "lithium metal plating",
             "lead-acid main",
+            "sodium-ion main",
         ]:
             variables.update(
                 self._get_standard_sei_film_overpotential_variables(eta_sei)

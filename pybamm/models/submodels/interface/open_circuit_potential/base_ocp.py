@@ -87,7 +87,7 @@ class BaseOpenCircuitPotential(BaseInterface):
                 "overpotential [V]": eta_particle,
             }
         )
-        if self.reaction in ["lithium-ion main", "lead-acid main"]:
+        if self.reaction in ["lithium-ion main", "lead-acid main", "sodium-ion main"]:
             variables.update(
                 {
                     f"{Domain} electrode {reaction_name}entropic change [V.K-1]": dUdT,

@@ -109,6 +109,7 @@ from .models.full_battery_models.base_battery_model import (
 )
 from .models.full_battery_models import lead_acid
 from .models.full_battery_models import lithium_ion
+from .models.full_battery_models import sodium_ion
 from .models.full_battery_models import equivalent_circuit
 
 #
@@ -160,6 +161,7 @@ from .parameters.electrical_parameters import (
 )
 from .parameters.thermal_parameters import thermal_parameters, ThermalParameters
 from .parameters.lithium_ion_parameters import LithiumIonParameters
+from .parameters.sodium_ion_parameters import SodiumIonParameters
 from .parameters.lead_acid_parameters import LeadAcidParameters
 from .parameters.ecm_parameters import EcmParameters
 from .parameters.size_distribution_parameters import *
