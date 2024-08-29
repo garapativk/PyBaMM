@@ -91,7 +91,6 @@ class LeadingOrderSodium(BaseElectrolyteConductivity):
         if "negative electrode" not in self.options.whole_cell_domains:
             phi_e_av = variables["Lithium metal interface electrolyte potential [V]"]
         else:
-            # delta_phi = phi_s - phi_e
             delta_phi_n_av = variables[
                 "X-averaged negative electrode surface potential difference [V]"
             ]
@@ -129,7 +128,6 @@ class LeadingOrderSodium(BaseElectrolyteConductivity):
 
         # ohmic losses
         # adding additional term as per Garapati et al., 
-        # delta_phi_e_av = pybamm.PrimaryBroadcast(0, "current collector")
         L_s = param.s.L
         T_av = variables["X-averaged cell temperature [K]"]
         c_e_av = variables["X-averaged electrolyte concentration [mol.m-3]"]

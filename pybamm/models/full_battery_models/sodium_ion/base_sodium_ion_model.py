@@ -7,7 +7,7 @@ import pybamm
 class BaseModel(pybamm.BaseBatteryModel):
     """
     Overwrites default parameters from Base Model with default parameters for
-    lithium-ion models
+    sodium-ion models
 
     Parameters
     ----------

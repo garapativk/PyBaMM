@@ -241,9 +241,7 @@ class kineticInverseButlerVolmer(BaseInterface):
         # be used instead
         c_max = pybamm.Parameter(f"Maximum concentration in {domain} electrode [mol.m-3]")
         c_s_surf = variables[f"{Domain} particle surface concentration [mol.m-3]"]
-        # c_avg = variables[f"Average {domain} particle concentration [mol.m-3]"]
         c_avg = variables[f"X-averaged {domain} particle surface concentration [mol.m-3]"]
-        # c_avg = variables[f"R-averaged {domain} particle concentration [mol.m-3]"]
         c_e = variables[f"{Domain} electrolyte concentration [mol.m-3]"]
         c_e_avg = variables[f"X-averaged {domain} electrolyte concentration [mol.m-3]"]
         c_rt = c_s_surf/c_avg
@@ -274,7 +272,6 @@ class kineticInverseButlerVolmer(BaseInterface):
                 pybamm.x_average(delta_phi)
             )
         )
-
         return variables
 
     def _get_overpotential(self, j, j0, ne, T, u, c_rt, c_diff_rt, c_rt_e):

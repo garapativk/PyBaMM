@@ -58,10 +58,10 @@ class LeadingOrder(BaseModel):
             ]
             phi_e_p_av = variables["X-averaged positive electrolyte potential [V]"]
 
-            # v = delta_phi_p_av + phi_e_p_av 
+            v = delta_phi_p_av + phi_e_p_av 
             # adding ohimc looses 
             delta_phi_e_av = variables["X-averaged electrolyte ohmic losses [V]"]
-            v = delta_phi_p_av + phi_e_p_av + delta_phi_e_av
+            v += delta_phi_e_av
 
             phi_s = pybamm.PrimaryBroadcast(v, ["positive electrode"])
             i_s = i_boundary_cc * (1 - (L_x - x_p) / L_p)

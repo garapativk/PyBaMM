@@ -1005,12 +1005,8 @@ class BaseBatteryModel(pybamm.BaseModel):
             )
         
         # changing default intercalation kinetics option for sodium-ion
-        # if isinstance(self, pybamm.sodium_ion.DFN) :
-        #     # or isinstance(self, pybamm.sodium_ion.SPM)\
-        #     #     or isinstance(self, pybamm.sodium_ion.SPMe):
-        #     default_options["intercalation kinetics"] == "kinetic controlled Buter-Volmer"
-
-        
+        # To reflect the new Butler-volmer equation
+              
         if extra_options is not None:
             intercalation_kinetics_option = extra_options.get("intercalation kinetics", "none")
         else:
@@ -1020,13 +1016,7 @@ class BaseBatteryModel(pybamm.BaseModel):
             isinstance(self, pybamm.sodium_ion.SPM) or
             isinstance(self, pybamm.sodium_ion.SPMe)) and intercalation_kinetics_option == "none":
                 options["intercalation kinetics"] = "kinetic controlled Buter-Volmer"
-            
        
-        # if isinstance(self, pybamm.sodium_ion.DFN) and intercalation_kinetics_option != "kinetic controlled Buter-Volmer":
-        #     raise pybamm.OptionError(
-        #         "must use kinetic controlled Buter-Volmer for sodium-ion"
-        #     )
-
         self._options = options
 
     def set_standard_output_variables(self):

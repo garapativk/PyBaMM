@@ -202,15 +202,10 @@ class BaseKinetics(BaseInterface):
                 variables.update(self._get_standard_icd_by_reaction_variables(j_j, i))
                 j += j_j
         elif domain_options["intercalation kinetics"] == "kinetic controlled Buter-Volmer":
-            # c_s = variables[f"{Domain} particle concentration [mol.m-3]"]
-            # c_s_surf = pybamm.surf(c_s)
             c_s_surf = variables[f"{Domain} particle surface concentration [mol.m-3]"]
             c_e = variables[f"{Domain} electrolyte concentration [mol.m-3]"]
-            # c_max = self.param.Domain.prim.c_max
             c_max = pybamm.Parameter(f"Maximum concentration in {domain} electrode [mol.m-3]")
-            # c_avg = pybamm.x_average(c_s_surf)
             c_avg = variables[f"X-averaged {domain} particle surface concentration [mol.m-3]"]
-            # c_e_avg = pybamm.x_average(c_e)
             c_e_avg = variables[f"X-averaged {domain} electrolyte concentration [mol.m-3]"]
             c_rt = c_s_surf/c_avg
             c_diff_rt = (c_max - c_s_surf)/(c_max - c_avg)

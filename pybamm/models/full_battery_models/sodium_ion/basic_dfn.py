@@ -8,6 +8,8 @@ from .base_sodium_ion_model import BaseModel
 class BasicDFN(BaseModel):
     """Doyle-Fuller-Newman (DFN) model of a sodium-ion battery, from
     :footcite:t:`Chayambuka2022`.
+    Chnages were made to DFN model from Marquis 2019 to match with 
+    Chayambuka 2022.
    
     Parameters
     ----------
@@ -19,6 +21,7 @@ class BasicDFN(BaseModel):
     def __init__(self, name="Doyle-Fuller-Newman model"):
         super().__init__(name=name)
         pybamm.citations.register("Chayambuka2022")
+        pybamm.citations.register("Marquis2019")
         # `param` is a class containing all the relevant parameters and functions for
         # this model. These are purely symbolic at this stage, and will be set by the
         # `ParameterValues` class when the model is processed.
@@ -127,33 +130,17 @@ class BasicDFN(BaseModel):
         c_s_surf_n = pybamm.surf(c_s_n)
         c_n_ravg = pybamm.r_average(c_s_n)
         c_e_n_avg = pybamm.x_average(c_e_n)
-
         sto_surf_n = c_s_surf_n / param.n.prim.c_max
         
         j0_n = param.n.prim.j0(c_e_n, c_s_surf_n, T)
-        # j0_n = param.n.prim.j0(c_e_n, c_s_surf_n, c_n_ravg, T)
-        # j0_n = param.n.prim.j0(c_e_n_avg, c_s_surf_n, c_n_ravg, T)
-        # j0_n = param.n.prim.j0(c_e_avg, c_s_surf_n, c_n_ravg, T)
-        # j0_n = param.n.prim.j0(param.c_e_init_av, c_s_surf_n, c_n_ravg, T)
         eta_n = phi_s_n - phi_e_n - param.n.prim.U(sto_surf_n, T)
 
-        # c_rt_n = c_s_surf_n/c_n_ravg
-        # c_diff_rt_n = (param.n.prim.c_max - c_s_surf_n)/(param.n.prim.c_max - c_n_ravg)
-
         c_n_avg = pybamm.x_average(c_s_surf_n)
-
         c_rt_n = c_s_surf_n/c_n_avg
         c_diff_rt_n = (param.n.prim.c_max - c_s_surf_n)/(param.n.prim.c_max - c_n_avg)
-        
         c_rt_ne = c_e_n/c_e_n_avg
-        # c_rt_ne = c_e_n/c_e_avg
-        # c_rt_ne = 1
-
         Feta_RT_n = 0.5 * param.F * eta_n / (param.R * T)
-        # j_n = j0_n * (
-        #     c_rt_n * pybamm.exp(param.n.prim.ne * Feta_RT_n)
-        #     - c_rt_ne * pybamm.exp(-param.n.prim.ne * Feta_RT_n)
-        # )
+     
         j_n = j0_n * (
             c_rt_n * pybamm.exp(param.n.prim.ne * Feta_RT_n)
             - c_diff_rt_n * c_rt_ne * pybamm.exp(-param.n.prim.ne * Feta_RT_n)
@@ -161,34 +148,17 @@ class BasicDFN(BaseModel):
 
         c_s_surf_p = pybamm.surf(c_s_p)
         c_p_ravg = pybamm.r_average(c_s_p)
-
         c_p_avg = pybamm.x_average(c_s_surf_p)
-
         c_e_p_avg = pybamm.x_average(c_e_p)
         sto_surf_p = c_s_surf_p / param.p.prim.c_max
-        # j0_p = param.p.prim.j0(c_e_avg, c_s_surf_p, c_p_ravg, T)
-        # j0_p = param.p.prim.j0(param.c_e_init_av, c_s_surf_p, c_p_ravg, T)
-        # j0_p = param.p.prim.j0(c_e_p_avg, c_s_surf_p, c_p_ravg, T)
-        # j0_p = param.p.prim.j0(c_e_p, c_s_surf_p, c_p_ravg, T)
         j0_p = param.p.prim.j0(c_e_p, c_s_surf_p, T)
         eta_p = phi_s_p - phi_e_p - param.p.prim.U(sto_surf_p, T)
-
-        # c_rt_p = c_s_surf_p/c_p_ravg
-        # c_diff_rt_p = (param.p.prim.c_max - c_s_surf_p)/(param.p.prim.c_max - c_p_ravg)
-
         c_rt_p = c_s_surf_p/c_p_avg
         c_diff_rt_p = (param.p.prim.c_max - c_s_surf_p)/(param.p.prim.c_max - c_p_avg)
 
         c_rt_pe = c_e_p/c_e_p_avg
-        # c_rt_pe = c_e_p/c_e_avg
-        # c_rt_pe = 1
-
         Feta_RT_p = 0.5 * param.F * eta_p / (param.R * T)
         j_s = pybamm.PrimaryBroadcast(0, "separator")
-        # j_p = j0_p * (
-        #     c_rt_p * pybamm.exp(param.p.prim.ne * Feta_RT_p)
-        #     - c_rt_pe * pybamm.exp(-param.p.prim.ne * Feta_RT_p)
-        # )
         j_p = j0_p * (
             c_rt_p * pybamm.exp(param.p.prim.ne * Feta_RT_p)
             - c_diff_rt_p * c_rt_pe * pybamm.exp(-param.p.prim.ne * Feta_RT_p)
@@ -281,9 +251,6 @@ class BasicDFN(BaseModel):
         # Electrolyte concentration
         ######################
         N_e = -tor * param.D_e(c_e, T) * pybamm.grad(c_e)
-        # self.rhs[c_e] =  (
-        #     -pybamm.div(N_e) + (1 - param.t_plus(c_e, T)) * a_j / param.F
-        # )
         self.rhs[c_e] = (1 / eps) * (
             -pybamm.div(N_e) + (1 - param.t_plus(c_e, T)) * a_j / param.F
         )
@@ -299,9 +266,6 @@ class BasicDFN(BaseModel):
         phi_s_p_L = pybamm.boundary_value(phi_s_p, "right")
         voltage = phi_s_p_L - param.R_contact*I
         
-        eta_n_avg = pybamm.x_average(eta_n)
-        eta_p_avg = pybamm.x_average(eta_p)
-
         # The `variables` dictionary contains all variables that might be useful for
         # visualising the solution of the model
         self.variables = {
@@ -321,9 +285,9 @@ class BasicDFN(BaseModel):
             "Average Electrolyte concentration [mol.m-3]": c_e_avg,
             "Negative electrode reaction overpotential [V]": eta_n,
              "X-averaged negative electrode reaction "
-            "overpotential [V]": eta_n_avg,
+            "overpotential [V]": pybamm.x_average(eta_n),
             "X-averaged positive electrode reaction "
-            "overpotential [V]": eta_p_avg,
+            "overpotential [V]": pybamm.x_average(eta_p),
         }
         # Events specify points at which a solution should terminate
         self.events += [
@@ -337,21 +301,4 @@ class BasicDFN(BaseModel):
                 "Minimum electrolyte concentration in positive electrode",
                 pybamm.min(c_e_p) - 0.001,
             ),
-            # pybamm.Event(
-            #     "Minimum negative particle surface stoichiometry",
-            #     pybamm.min(sto_surf_n) - 0.001,
-            # ),
-            # pybamm.Event(
-            #     "Maximum negative particle surface stoichiometry",
-            #     (1 - 0.001) - pybamm.max(sto_surf_n),
-            # ),
-            # pybamm.Event(
-            #     "Minimum positive particle surface stoichiometry",
-            #     pybamm.min(sto_surf_p) - 0.001,
-            # ),
-            # pybamm.Event(
-            #     "Maximum positive particle surface stoichiometry",
-            #     (1 - 0.001) - pybamm.max(sto_surf_p),
-            # ),
-
         ]

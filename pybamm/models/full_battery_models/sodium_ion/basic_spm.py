@@ -8,6 +8,7 @@ from .base_sodium_ion_model import BaseModel
 class BasicSPM(BaseModel):
     """Single Particle Model (SPM) model of a sodium-ion battery, from
     :footcite:t:`Garapativk2023`.
+    Complete PDE is solved for concnetration of sodium ion in electrode instead of  2-parameter model in the garapti 2023 for fair comparison between models and to make it closer to SPM form Marquis 2019.
 
     Parameters
     ----------
@@ -126,19 +127,15 @@ class BasicSPM(BaseModel):
         ######################
         # Interfacial reactions
         RT_F = param.R * T / param.F
-        # c_n_ravg = pybamm.r_average(c_s_n)
-        # c_p_ravg = pybamm.r_average(c_s_p)
-        # c_n_ravg = pybamm.x_average(c_s_n)
-        # c_p_ravg = pybamm.x_average(c_s_p)
-        # c_n_ravg = c_s_n
-        # c_p_ravg = c_s_p
+        
+        # As we are solving with full equation and it is single particle avergae is same as the surface value ( as only one particle is used)
+        # But going with the same equation to make it identical to SPMe
         c_n_ravg = c_s_surf_n
         c_p_ravg = c_s_surf_p
         # changing from surf to complete concentration 
         j0_n = param.n.prim.j0(param.c_e_init_av, c_s_surf_n, T)
         j0_p = param.p.prim.j0(param.c_e_init_av, c_s_surf_p, T)
-        # j0_n = param.n.prim.j0(param.c_e_init_av, c_s_surf_n, c_n_ravg, T)
-        # j0_p = param.p.prim.j0(param.c_e_init_av, c_s_surf_p, c_p_ravg, T)
+       
         j_r_n = j_n/j0_n
         j_r_p = j_p/j0_p
        
@@ -158,10 +155,7 @@ class BasicSPM(BaseModel):
         
         eta_n_avg = pybamm.x_average(eta_n)
         eta_p_avg = pybamm.x_average(eta_p)
-
-        # eta_n = (2 / param.n.prim.ne) * RT_F * pybamm.arcsinh(j_n / (2 * j0_n))
-        # eta_p = (2 / param.p.prim.ne) * RT_F * pybamm.arcsinh(j_p / (2 * j0_p))
-        
+   
         phi_s_n = 0
 
         kappa_e = param.kappa_e(param.c_e_init_av, T)
@@ -173,17 +167,10 @@ class BasicSPM(BaseModel):
             + 3*(param.s.L/eps_s**param.s.b_e) 
             + (param.p.L/eps_p**param.p.b_e) 
         )
-        # phi_e_r = -(i_cell/(2*kappa_e))*(
-        #     (param.n.L/eps_n**param.n.b_e) 
-        #     + 2*(param.s.L/eps_s**param.s.b_e) 
-        #     + (param.p.L/eps_p**param.p.b_e) 
-        # )
-        # phi_e = -eta_n - param.n.prim.U(sto_surf_n, T) + phi_e_r
+        
         phi_e = -eta_n_avg - param.n.prim.U(sto_surf_n, T) + phi_e_r
-        # phi_s_p = eta_p + phi_e + param.p.prim.U(sto_surf_p, T)
         phi_s_p = eta_p_avg + phi_e + param.p.prim.U(sto_surf_p, T)
-        # phi_s_p = phi_e + param.p.prim.U(sto_surf_p, T)
-
+        
         V = phi_s_p - param.R_contact*i_cell*param.A_cc
 
         whole_cell = ["negative electrode", "separator", "positive electrode"]

@@ -19,12 +19,8 @@ from .dfn import DFN
 from .newman_tobias import NewmanTobias
 from .basic_dfn import BasicDFN
 from .basic_spm import BasicSPM
-from .basic_spm2 import BasicSPM2
 from .basic_dfn_half_cell import BasicDFNHalfCell
 from .basic_dfn_composite import BasicDFNComposite
 from .Yang2017 import Yang2017
 from .mpm import MPM
 from .msmr import MSMR
-from .basic_dfn_cap import BasicDFNCap
-from .basic_spm_cap import BasicSPMCap
-from .basic_spme_cap import BasicSPMeCap
