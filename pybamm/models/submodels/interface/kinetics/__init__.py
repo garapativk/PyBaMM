@@ -1,6 +1,6 @@
 from .base_kinetics import BaseKinetics
 from .total_main_kinetics import TotalMainKinetics
-from .butler_volmer import SymmetricButlerVolmer, AsymmetricButlerVolmer
+from .butler_volmer import SymmetricButlerVolmer, AsymmetricButlerVolmer, kineticsControlledButlerVolmer
 from .linear import Linear
 from .marcus import Marcus, MarcusHushChidsey
 from .tafel import ForwardTafel  # , BackwardTafel
@@ -11,4 +11,5 @@ from .inverse_kinetics.inverse_butler_volmer import (
     InverseButlerVolmer,
     CurrentForInverseButlerVolmer,
     CurrentForInverseButlerVolmerLithiumMetal,
+    kineticInverseButlerVolmer,
 )

@@ -177,3 +177,110 @@ class CurrentForInverseButlerVolmerLithiumMetal(BaseInterface):
         variables.update(self._get_standard_interfacial_current_variables(j))
 
         return variables
+
+class kineticInverseButlerVolmer(BaseInterface):
+    """
+    A submodel that implements the inverted form of the kinetic conrolled 
+    Butler-Volmer relation to solve for the reaction overpotential.
+    Ref: Garapati2023
+
+    Parameters
+    ----------
+    param
+        Model parameters
+    domain : iter of str, optional
+        The domain(s) in which to compute the interfacial current.
+    reaction : str
+        The name of the reaction being implemented
+    options: dict
+        A dictionary of options to be passed to the model. In this case "SEI film
+        resistance" is the important option. See :class:`pybamm.BaseBatteryModel`
+
+    """
+
+    def __init__(self, param, domain, reaction, options=None):
+        super().__init__(param, domain, reaction, options=options)
+
+    def get_coupled_variables(self, variables):
+        domain, Domain = self.domain_Domain
+        reaction_name = self.reaction_name
+
+        ocp = variables[f"{Domain} electrode {reaction_name}open-circuit potential [V]"]
+
+        j0 = self._get_exchange_current_density(variables)
+        # Broadcast to match j0's domain
+
+        j_tot_av, a_j_tot_av = self._get_average_total_interfacial_current_density(
+            variables
+        )
+        if j0.domain in [[], ["current collector"]]:
+            j_tot = j_tot_av
+        else:
+            j_tot = pybamm.PrimaryBroadcast(j_tot_av, [f"{domain} electrode"])
+        variables.update(
+            self._get_standard_total_interfacial_current_variables(j_tot, a_j_tot_av)
+        )
+
+        ne = self._get_number_of_electrons_in_reaction()
+        # Note: T must have the same domain as j0 and eta_r
+        if self.options.electrode_types[domain] == "planar":
+            T = variables["X-averaged cell temperature [K]"]
+            u = variables["Lithium metal interface utilisation"]
+        elif j0.domain in ["current collector", ["current collector"]]:
+            T = variables["X-averaged cell temperature [K]"]
+            u = variables[f"X-averaged {domain} electrode interface utilisation"]
+        else:
+            T = variables[f"{Domain} electrode temperature [K]"]
+            u = variables[f"{Domain} electrode interface utilisation"]
+
+        # eta_r is the overpotential from inverting Butler-Volmer, regardless of any
+        # additional SEI resistance. What changes is how delta_phi is defined in terms
+        # of eta_r
+        # We use the total resistance to calculate eta_r, but this only introduces
+        # negligible errors. For the exact answer, the surface form submodels should
+        # be used instead
+        c_max = pybamm.Parameter(f"Maximum concentration in {domain} electrode [mol.m-3]")
+        c_s_surf = variables[f"{Domain} particle surface concentration [mol.m-3]"]
+        # c_avg = variables[f"Average {domain} particle concentration [mol.m-3]"]
+        c_avg = variables[f"X-averaged {domain} particle surface concentration [mol.m-3]"]
+        # c_avg = variables[f"R-averaged {domain} particle concentration [mol.m-3]"]
+        c_e = variables[f"{Domain} electrolyte concentration [mol.m-3]"]
+        c_e_avg = variables[f"X-averaged {domain} electrolyte concentration [mol.m-3]"]
+        c_rt = c_s_surf/c_avg
+        c_rt_e = c_e/c_e_avg
+        c_diff_rt = (c_max - c_s_surf)/(c_max - c_avg)
+     
+        eta_r = self._get_overpotential(j_tot, j0, ne, T, u, c_rt, c_diff_rt, c_rt_e)
+
+        # With SEI resistance (distributed and averaged have the same effect here)
+        if self.options["SEI film resistance"] != "none":
+            R_sei = self.phase_param.R_sei
+            if self.options.electrode_types[domain] == "planar":
+                L_sei = variables[f"{Domain} total SEI thickness [m]"]
+            else:
+                L_sei = variables[f"X-averaged {domain} total SEI thickness [m]"]
+            eta_sei = -j_tot * L_sei * R_sei
+        # Without SEI resistance
+        else:
+            eta_sei = pybamm.Scalar(0)
+        variables.update(self._get_standard_sei_film_overpotential_variables(eta_sei))
+
+        delta_phi = eta_r + ocp - eta_sei  # = phi_s - phi_e
+
+        variables.update(self._get_standard_exchange_current_variables(j0))
+        variables.update(self._get_standard_overpotential_variables(eta_r))
+        variables.update(
+            self._get_standard_average_surface_potential_difference_variables(
+                pybamm.x_average(delta_phi)
+            )
+        )
+
+        return variables
+
+    def _get_overpotential(self, j, j0, ne, T, u, c_rt, c_diff_rt, c_rt_e):
+        param = self.param
+        j_r = j/(j0 * u)
+        return (2 * (param.R * T) / param.F / ne) * pybamm.log(
+            (j_r + pybamm.Sqrt(j_r**2 + 4*c_rt*c_diff_rt*c_rt_e))
+            /(2 * c_rt)
+            )

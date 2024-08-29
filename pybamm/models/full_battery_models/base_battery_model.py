@@ -246,6 +246,7 @@ class BatteryModelOptions(pybamm.FuzzyDict):
                 "Marcus",
                 "Marcus-Hush-Chidsey",
                 "MSMR",
+                "kinetic controlled Buter-Volmer",
             ],
             "interface utilisation": ["full", "constant", "current-driven"],
             "lithium plating": [
@@ -1002,6 +1003,29 @@ class BaseBatteryModel(pybamm.BaseModel):
             raise pybamm.OptionError(
                 f"must use surface formulation to solve {self!s} with hydrolysis"
             )
+        
+        # changing default intercalation kinetics option for sodium-ion
+        # if isinstance(self, pybamm.sodium_ion.DFN) :
+        #     # or isinstance(self, pybamm.sodium_ion.SPM)\
+        #     #     or isinstance(self, pybamm.sodium_ion.SPMe):
+        #     default_options["intercalation kinetics"] == "kinetic controlled Buter-Volmer"
+
+        
+        if extra_options is not None:
+            intercalation_kinetics_option = extra_options.get("intercalation kinetics", "none")
+        else:
+            intercalation_kinetics_option = "none"
+
+        if (isinstance(self, pybamm.sodium_ion.DFN) or 
+            isinstance(self, pybamm.sodium_ion.SPM) or
+            isinstance(self, pybamm.sodium_ion.SPMe)) and intercalation_kinetics_option == "none":
+                options["intercalation kinetics"] = "kinetic controlled Buter-Volmer"
+            
+       
+        # if isinstance(self, pybamm.sodium_ion.DFN) and intercalation_kinetics_option != "kinetic controlled Buter-Volmer":
+        #     raise pybamm.OptionError(
+        #         "must use kinetic controlled Buter-Volmer for sodium-ion"
+        #     )
 
         self._options = options
 
@@ -1110,10 +1134,14 @@ class BaseBatteryModel(pybamm.BaseModel):
             return pybamm.kinetics.MarcusHushChidsey
         elif options["intercalation kinetics"] == "MSMR":
             return pybamm.kinetics.MSMRButlerVolmer
+        elif options["intercalation kinetics"] == "kinetic controlled Buter-Volmer":
+            return pybamm.kinetics.kineticsControlledButlerVolmer
 
     def get_inverse_intercalation_kinetics(self):
         if self.options["intercalation kinetics"] == "symmetric Butler-Volmer":
             return pybamm.kinetics.InverseButlerVolmer
+        elif self.options["intercalation kinetics"] == "kinetic controlled Buter-Volmer":
+            return pybamm.kinetics.kineticInverseButlerVolmer
         else:
             raise pybamm.OptionError(
                 "Inverse kinetics are only implemented for symmetric Butler-Volmer. "

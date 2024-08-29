@@ -1,5 +1,5 @@
 from .base_electrolyte_conductivity import BaseElectrolyteConductivity
-from .leading_order_conductivity import LeadingOrder
+from .leading_order_conductivity import LeadingOrder, LeadingOrderSodium
 from .composite_conductivity import Composite
 from .full_conductivity import Full
 from .integrated_conductivity import Integrated
