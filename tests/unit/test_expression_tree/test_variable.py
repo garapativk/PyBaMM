@@ -1,16 +1,16 @@
 #
 # Tests for the Variable class
 #
-from tests import TestCase
+
 import unittest
 
 import numpy as np
 
 import pybamm
-from pybamm.util import have_optional_dependency
+import sympy
 
 
-class TestVariable(TestCase):
+class TestVariable(unittest.TestCase):
     def test_variable_init(self):
         a = pybamm.Variable("a")
         self.assertEqual(a.name, "a")
@@ -55,7 +55,6 @@ class TestVariable(TestCase):
             pybamm.Variable("var", bounds=(1, 1))
 
     def test_to_equation(self):
-        sympy = have_optional_dependency("sympy")
         # Test print_name
         func = pybamm.Variable("test_string")
         func.print_name = "test"
@@ -70,7 +69,7 @@ class TestVariable(TestCase):
             func.to_json()
 
 
-class TestVariableDot(TestCase):
+class TestVariableDot(unittest.TestCase):
     def test_variable_init(self):
         a = pybamm.VariableDot("a'")
         self.assertEqual(a.name, "a'")

@@ -1,7 +1,7 @@
 #
 # Tests for the Binary Operator classes
 #
-from tests import TestCase
+
 import unittest
 import unittest.mock as mock
 
@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pybamm
-from pybamm.util import have_optional_dependency
+import sympy
 
 EMPTY_DOMAINS = {
     "primary": [],
@@ -19,7 +19,7 @@ EMPTY_DOMAINS = {
 }
 
 
-class TestBinaryOperators(TestCase):
+class TestBinaryOperators(unittest.TestCase):
     def test_binary_operator(self):
         a = pybamm.Symbol("a")
         b = pybamm.Symbol("b")
@@ -790,7 +790,6 @@ class TestBinaryOperators(TestCase):
         self.assertEqual(pybamm.inner(a3, a3).evaluate(), 9)
 
     def test_to_equation(self):
-        sympy = have_optional_dependency("sympy")
         # Test print_name
         pybamm.Addition.print_name = "test"
         self.assertEqual(pybamm.Addition(1, 2).to_equation(), sympy.Symbol("test"))

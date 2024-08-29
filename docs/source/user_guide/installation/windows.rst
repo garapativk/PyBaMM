@@ -6,7 +6,7 @@ Windows
 Prerequisites
 -------------
 
-To use PyBaMM, you must have Python 3.8, 3.9, 3.10, 3.11, or 3.12 installed.
+To use PyBaMM, you must have Python 3.9, 3.10, 3.11, or 3.12 installed.
 
 To install Python 3 download the installation files from `Python’s
 website <https://www.python.org/downloads/windows/>`__. Make sure to
@@ -71,15 +71,11 @@ Optional - JaxSolver
 
 Users can install ``jax`` and ``jaxlib`` to use the Jax solver.
 
-.. note::
-
-   The Jax solver is only supported for Python versions 3.9 through 3.12.
-
 .. code:: bash
 
 	  pip install "pybamm[jax]"
 
-The ``pip install "pybamm[jax]"`` command automatically downloads and installs ``pybamm`` and the compatible versions of ``jax`` and ``jaxlib`` on your system. (``pybamm_install_jax`` is deprecated.)
+The ``pip install "pybamm[jax]"`` command automatically downloads and installs ``pybamm`` and the compatible versions of ``jax`` and ``jaxlib`` on your system.
 
 Uninstall PyBaMM
 ----------------

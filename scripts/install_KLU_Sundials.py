@@ -1,14 +1,3 @@
-# /// pyproject
-# [run]
-# requires-python = "">=3.8, <3.13""
-# dependencies = [
-#   "cmake",
-# ]
-#
-# [additional-info]
-# repository = "https://github.com/pybamm-team/PyBaMM"
-# documentation = "https://docs.pybamm.org"
-# ///
 import os
 import subprocess
 import tarfile
@@ -66,15 +55,22 @@ def install_suitesparse(download_dir):
         # multiple paths at the time of wheel repair. Therefore, it should not be
         # built with an RPATH since it is copied to the install prefix.
         if libdir == "SuiteSparse_config":
-            env["CMAKE_OPTIONS"] = f"-DCMAKE_INSTALL_PREFIX={install_dir}"
+            # if in CI, set RPATH to the install directory for SuiteSparse_config
+            # dylibs to find libomp.dylib when repairing the wheel
+            if os.environ.get("CIBUILDWHEEL") == "1":
+                env["CMAKE_OPTIONS"] = (
+                    f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCMAKE_INSTALL_RPATH={install_dir}/lib"
+                )
+            else:
+                env["CMAKE_OPTIONS"] = f"-DCMAKE_INSTALL_PREFIX={install_dir}"
         else:
             # For AMD, COLAMD, BTF and KLU; do not set a BUILD RPATH but use an
             # INSTALL RPATH in order to ensure that the dynamic libraries are found
             # at runtime just once. Otherwise, delocate complains about multiple
             # references to the SuiteSparse_config dynamic library (auditwheel does not).
-            env[
-                "CMAKE_OPTIONS"
-            ] = f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCMAKE_INSTALL_RPATH={install_dir}/lib -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=FALSE -DCMAKE_BUILD_WITH_INSTALL_RPATH=FALSE"
+            env["CMAKE_OPTIONS"] = (
+                f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCMAKE_INSTALL_RPATH={install_dir}/lib -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=FALSE -DCMAKE_BUILD_WITH_INSTALL_RPATH=FALSE"
+            )
         subprocess.run(make_cmd, cwd=build_dir, env=env, shell=True, check=True)
         subprocess.run(install_cmd, cwd=build_dir, check=True)
 
@@ -116,14 +112,24 @@ def install_sundials(download_dir, install_dir):
             OpenMP_omp_LIBRARY = "/usr/local/opt/libomp/lib/libomp.dylib"
         else:
             raise NotImplementedError(
-                f"Unsupported processor architecture: {platform.processor()}. Only 'arm' and 'i386' architectures are supported."
+                f"Unsupported processor architecture: {platform.processor()}. "
+                "Only 'arm' and 'i386' architectures are supported."
             )
 
-        cmake_args += [
-            "-DOpenMP_C_FLAGS=" + OpenMP_C_FLAGS,
-            "-DOpenMP_C_LIB_NAMES=" + OpenMP_C_LIB_NAMES,
-            "-DOpenMP_omp_LIBRARY=" + OpenMP_omp_LIBRARY,
-        ]
+        # Don't pass the following args to CMake when building wheels. We set a custom
+        # OpenMP installation for macOS wheels in the wheel build script.
+        # This is because we can't use Homebrew's OpenMP dylib due to the wheel
+        # repair process, where Homebrew binaries are not built for distribution and
+        # break MACOSX_DEPLOYMENT_TARGET. We use a custom OpenMP binary as described
+        # in CIBW_BEFORE_ALL in the wheel builder CI job.
+        # Check for CI environment variable to determine if we are building a wheel
+        if os.environ.get("CIBUILDWHEEL") != "1":
+            print("Using Homebrew OpenMP for macOS build")
+            cmake_args += [
+                "-DOpenMP_C_FLAGS=" + OpenMP_C_FLAGS,
+                "-DOpenMP_C_LIB_NAMES=" + OpenMP_C_LIB_NAMES,
+                "-DOpenMP_omp_LIBRARY=" + OpenMP_omp_LIBRARY,
+            ]
 
     # SUNDIALS are built within download_dir 'build_sundials' in the PyBaMM root
     # download_dir
@@ -267,12 +273,12 @@ def parallel_download(urls, download_dir):
 # First check requirements: make and cmake
 try:
     subprocess.run(["make", "--version"])
-except OSError:
-    raise RuntimeError("Make must be installed.")
+except OSError as error:
+    raise RuntimeError("Make must be installed.") from error
 try:
     subprocess.run(["cmake", "--version"])
-except OSError:
-    raise RuntimeError("CMake must be installed.")
+except OSError as error:
+    raise RuntimeError("CMake must be installed.") from error
 
 # Build in parallel wherever possible
 os.environ["CMAKE_BUILD_PARALLEL_LEVEL"] = str(cpu_count())

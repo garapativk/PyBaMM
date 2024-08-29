@@ -1,14 +1,12 @@
 #
 # Tests for the lithium-ion MPM model
 #
-from tests import TestCase
 import pybamm
 import tests
 import numpy as np
-import unittest
 
 
-class TestMPM(TestCase):
+class TestMPM:
     def test_basic_processing(self):
         options = {"thermal": "isothermal"}
         model = pybamm.lithium_ion.MPM(options)
@@ -68,6 +66,28 @@ class TestMPM(TestCase):
         modeltest = tests.StandardModelTest(model, parameter_values=parameter_values)
         modeltest.test_all(skip_output_tests=True)
 
+    def test_wycisk_ocp(self):
+        options = {"open-circuit potential": ("Wycisk", "single")}
+        model = pybamm.lithium_ion.MPM(options)
+        parameter_values = pybamm.ParameterValues("Chen2020")
+        parameter_values = pybamm.get_size_distribution_parameters(parameter_values)
+        parameter_values.update(
+            {
+                "Negative electrode lithiation OCP [V]"
+                "": lambda sto: parameter_values["Negative electrode OCP [V]"](sto)
+                - 0.1,
+                "Negative electrode delithiation OCP [V]"
+                "": lambda sto: parameter_values["Negative electrode OCP [V]"](sto)
+                + 0.1,
+                "Negative particle hysteresis decay rate": 1,
+                "Negative particle hysteresis switching factor": 1,
+                # "Negative electrode OCP hysteresis [V]": lambda sto: 1,
+            },
+            check_already_exists=False,
+        )
+        modeltest = tests.StandardModelTest(model, parameter_values=parameter_values)
+        modeltest.test_all(skip_output_tests=True)
+
     def test_voltage_control(self):
         options = {"operating mode": "voltage"}
         model = pybamm.lithium_ion.MPM(options)
@@ -102,12 +122,3 @@ class TestMPM(TestCase):
         # compare
         np.testing.assert_array_almost_equal(neg_Li[0], neg_Li[1], decimal=13)
         np.testing.assert_array_almost_equal(pos_Li[0], pos_Li[1], decimal=13)
-
-
-if __name__ == "__main__":
-    print("Add -v for more debug output")
-    import sys
-
-    if "-v" in sys.argv:
-        debug = True
-    unittest.main()

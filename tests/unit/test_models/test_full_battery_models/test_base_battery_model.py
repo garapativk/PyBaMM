@@ -1,7 +1,7 @@
 #
 # Tests for the base battery model class
 #
-from tests import TestCase
+
 from pybamm.models.full_battery_models.base_battery_model import BatteryModelOptions
 import pybamm
 import unittest
@@ -26,6 +26,7 @@ PRINT_OPTIONS_OUTPUT = """\
 'dimensionality': 0 (possible: [0, 1, 2])
 'electrolyte conductivity': 'default' (possible: ['default', 'full', 'leading order', 'composite', 'integrated'])
 'exchange-current density': 'single' (possible: ['single', 'current sigmoid'])
+'heat of mixing': 'false' (possible: ['false', 'true'])
 'hydrolysis': 'false' (possible: ['false', 'true'])
 'intercalation kinetics': 'symmetric Butler-Volmer' (possible: ['symmetric Butler-Volmer', 'asymmetric Butler-Volmer', 'linear', 'Marcus', 'Marcus-Hush-Chidsey', 'MSMR'])
 'interface utilisation': 'full' (possible: ['full', 'constant', 'current-driven'])
@@ -33,9 +34,9 @@ PRINT_OPTIONS_OUTPUT = """\
 'lithium plating porosity change': 'false' (possible: ['false', 'true'])
 'loss of active material': 'stress-driven' (possible: ['none', 'stress-driven', 'reaction-driven', 'current-driven', 'stress and reaction-driven'])
 'number of MSMR reactions': 'none' (possible: ['none'])
-'open-circuit potential': 'single' (possible: ['single', 'current sigmoid', 'MSMR'])
+'open-circuit potential': 'single' (possible: ['single', 'current sigmoid', 'MSMR', 'Wycisk'])
 'operating mode': 'current' (possible: ['current', 'voltage', 'power', 'differential power', 'explicit power', 'resistance', 'differential resistance', 'explicit resistance', 'CCCV'])
-'particle': 'Fickian diffusion' (possible: ['Fickian diffusion', 'fast diffusion', 'uniform profile', 'quadratic profile', 'quartic profile', 'MSMR'])
+'particle': 'Fickian diffusion' (possible: ['Fickian diffusion', 'uniform profile', 'quadratic profile', 'quartic profile', 'MSMR'])
 'particle mechanics': 'swelling only' (possible: ['none', 'swelling only', 'swelling and cracking'])
 'particle phases': '1' (possible: ['1', '2'])
 'particle shape': 'spherical' (possible: ['spherical', 'no particles'])
@@ -46,14 +47,16 @@ PRINT_OPTIONS_OUTPUT = """\
 'SEI porosity change': 'false' (possible: ['false', 'true'])
 'stress-induced diffusion': 'true' (possible: ['false', 'true'])
 'surface form': 'differential' (possible: ['false', 'differential', 'algebraic'])
+'surface temperature': 'ambient' (possible: ['ambient', 'lumped'])
 'thermal': 'x-full' (possible: ['isothermal', 'lumped', 'x-lumped', 'x-full'])
 'total interfacial current density as a state': 'false' (possible: ['false', 'true'])
+'transport efficiency': 'Bruggeman' (possible: ['Bruggeman', 'ordered packing', 'hyperbola of revolution', 'overlapping spheres', 'tortuosity factor', 'random overlapping cylinders', 'heterogeneous catalyst', 'cation-exchange membrane'])
 'working electrode': 'both' (possible: ['both', 'positive'])
 'x-average side reactions': 'false' (possible: ['false', 'true'])
 """
 
 
-class TestBaseBatteryModel(TestCase):
+class TestBaseBatteryModel(unittest.TestCase):
     def test_process_parameters_and_discretise(self):
         model = pybamm.lithium_ion.SPM()
         # Set up geometry and parameters
@@ -209,8 +212,6 @@ class TestBaseBatteryModel(TestCase):
             pybamm.BaseBatteryModel({"convection": "full transverse"})
         with self.assertRaisesRegex(pybamm.OptionError, "particle"):
             pybamm.BaseBatteryModel({"particle": "bad particle"})
-        with self.assertRaisesRegex(pybamm.OptionError, "The 'fast diffusion'"):
-            pybamm.BaseBatteryModel({"particle": "fast diffusion"})
         with self.assertRaisesRegex(pybamm.OptionError, "working electrode"):
             pybamm.BaseBatteryModel({"working electrode": "bad working electrode"})
         with self.assertRaisesRegex(pybamm.OptionError, "The 'negative' working"):
@@ -231,10 +232,6 @@ class TestBaseBatteryModel(TestCase):
             pybamm.BaseBatteryModel({"SEI film resistance": "bad SEI film resistance"})
         with self.assertRaisesRegex(pybamm.OptionError, "SEI porosity change"):
             pybamm.BaseBatteryModel({"SEI porosity change": "bad SEI porosity change"})
-        with self.assertRaisesRegex(
-            pybamm.OptionError, "SEI porosity change must now be given in string format"
-        ):
-            pybamm.BaseBatteryModel({"SEI porosity change": True})
         # changing defaults based on other options
         model = pybamm.BaseBatteryModel()
         self.assertEqual(model.options["SEI film resistance"], "none")
@@ -308,6 +305,10 @@ class TestBaseBatteryModel(TestCase):
         # SEI on cracks
         with self.assertRaisesRegex(pybamm.OptionError, "SEI on cracks"):
             pybamm.BaseBatteryModel({"SEI on cracks": "bad SEI on cracks"})
+        with self.assertRaisesRegex(pybamm.OptionError, "'SEI on cracks' is 'true'"):
+            pybamm.BaseBatteryModel(
+                {"SEI on cracks": "true", "particle mechanics": "swelling only"}
+            )
 
         # plating model
         with self.assertRaisesRegex(pybamm.OptionError, "lithium plating"):
@@ -370,6 +371,21 @@ class TestBaseBatteryModel(TestCase):
                     "thermal": "x-lumped",
                     "working electrode": "positive",
                 }
+            )
+
+        # thermal heat of mixing
+        with self.assertRaisesRegex(NotImplementedError, "Heat of mixing"):
+            pybamm.BaseBatteryModel(
+                {
+                    "heat of mixing": "true",
+                    "particle size": "distribution",
+                }
+            )
+
+        # surface thermal model
+        with self.assertRaisesRegex(pybamm.OptionError, "surface temperature"):
+            pybamm.BaseBatteryModel(
+                {"surface temperature": "lumped", "thermal": "x-full"}
             )
 
         # phases
@@ -471,7 +487,7 @@ class TestBaseBatteryModel(TestCase):
         os.remove("test_base_battery_model.json")
 
 
-class TestOptions(TestCase):
+class TestOptions(unittest.TestCase):
     def test_print_options(self):
         with io.StringIO() as buffer, redirect_stdout(buffer):
             BatteryModelOptions(OPTIONS_DICT).print_options()

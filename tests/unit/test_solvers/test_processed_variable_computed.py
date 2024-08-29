@@ -5,7 +5,7 @@
 #  by the idaklu solver, and does not possesses any capability to calculate
 #  values itself since it does not have access to the full state vector
 #
-from tests import TestCase
+
 import casadi
 import pybamm
 import tests
@@ -32,9 +32,11 @@ def to_casadi(var_pybamm, y, inputs=None):
 
 
 def process_and_check_2D_variable(
-    var, first_spatial_var, second_spatial_var, disc=None, geometry_options={}
+    var, first_spatial_var, second_spatial_var, disc=None, geometry_options=None
 ):
     # first_spatial_var should be on the "smaller" domain, i.e "r" for an "r-x" variable
+    if geometry_options is None:
+        geometry_options = {}
     if disc is None:
         disc = tests.get_discretisation_for_testing()
     disc.set_variable_slices([var])
@@ -66,7 +68,7 @@ def process_and_check_2D_variable(
     return y_sol, first_sol, second_sol, t_sol
 
 
-class TestProcessedVariableComputed(TestCase):
+class TestProcessedVariableComputed(unittest.TestCase):
     def test_processed_variable_0D(self):
         # without space
         y = pybamm.StateVector(slice(0, 1))
