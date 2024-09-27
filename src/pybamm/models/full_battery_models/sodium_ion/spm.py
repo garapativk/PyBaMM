@@ -139,7 +139,8 @@ class SPM(BaseModel):
           
             self.submodels[
                 "leading-order electrolyte conductivity"
-            ] = pybamm.electrolyte_conductivity.LeadingOrderSodium(
+            # ] = pybamm.electrolyte_conductivity.LeadingOrderSodium(
+            ] = pybamm.electrolyte_conductivity.LeadingOrder(
                 self.param, options=self.options
             )
         if self.options["surface form"] == "false":

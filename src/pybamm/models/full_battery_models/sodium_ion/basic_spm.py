@@ -162,11 +162,12 @@ class BasicSPM(BaseModel):
         eps_n = pybamm.Parameter("Negative electrode porosity")
         eps_p = pybamm.Parameter("Positive electrode porosity")
         eps_s = pybamm.Parameter("Separator porosity")
-        phi_e_r = -(i_cell/(3*kappa_e))*(
-            (param.n.L/eps_n**param.n.b_e) 
-            + 3*(param.s.L/eps_s**param.s.b_e) 
-            + (param.p.L/eps_p**param.p.b_e) 
-        )
+        # phi_e_r = -(i_cell/(3*kappa_e))*(
+        #     (param.n.L/eps_n**param.n.b_e) 
+        #     + 3*(param.s.L/eps_s**param.s.b_e) 
+        #     + (param.p.L/eps_p**param.p.b_e) 
+        # )
+        phi_e_r = 0
         
         phi_e = -eta_n_avg - param.n.prim.U(sto_surf_n, T) + phi_e_r
         phi_s_p = eta_p_avg + phi_e + param.p.prim.U(sto_surf_p, T)
